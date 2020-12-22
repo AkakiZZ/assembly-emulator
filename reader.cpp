@@ -19,9 +19,10 @@ void read_file(ifstream &file, vector<string> &instructions) {
     while (getline(file >> std::ws, line)) {
         string without_spaces = "";
         for (int i = 0; i < line.length(); i++) {
-            if (line[i] != ' ' && line[i] != ';') 
+            if (line[i] != ' ') 
                 without_spaces += line[i];
         }
-        instructions.push_back(without_spaces);
+        if (line.length() > 0)
+            instructions.push_back(without_spaces);
     }
 }

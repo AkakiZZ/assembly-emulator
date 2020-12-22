@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <regex>
 
 #define memstore_one_byte(addr, n) (*((char*)((char*)memory + (addr))) = n) 
 #define memstore_two_bytes(addr, n) (*((short*)((char*)memory + (addr))) = n)
@@ -9,16 +8,18 @@
 #define memload_two_bytes(addr) (int)(*((unsigned short*)((char*)memory + (addr))))
 #define memload_four_bytes(addr) *((int*)((char*)memory + (addr)))
 
+#define GET_LINE(PC) (PC / SIZE_OF_INSTRUCTIONS + 1)
+
 const static int SP_OP_OFFSET = 5;
-const static std::string SP_OP_MATCH = "SP=SP";
-const static std::string STORE_OP_MATCH = "M[]=";
-const static std::string LOAD_OP_MATCH = "R=M[]";
-const static std::string ALU_OP_MATCH_1 = "R=-"; 
-const static std::string ALU_OP_MATCH_2 = "R=+"; 
-const static std::string ALU_OP_MATCH_3 = "R=*"; 
-const static std::string ALU_OP_MATCH_4 = "R=/"; 
+const static std::string SP_OP_MATCH = "SP=SP;";
+const static std::string STORE_OP_MATCH = "M[]=;";
+const static std::string LOAD_OP_MATCH = "R=M[];";
+const static std::string ALU_OP_MATCH_1 = "R=-;"; 
+const static std::string ALU_OP_MATCH_2 = "R=+;"; 
+const static std::string ALU_OP_MATCH_3 = "R=*;"; 
+const static std::string ALU_OP_MATCH_4 = "R=/;"; 
 const static std::string BRANCHES[6] = {"BLT", "BLE", "BEQ", "BNE", "BGT", "BGE"};
-const static std::string BRANCH_MATCH = "B,,PC";
+const static std::string BRANCH_MATCH = "B,,PC;";
 
 void error(int line_number);
 

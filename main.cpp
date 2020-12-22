@@ -40,7 +40,6 @@ void execute_instructions(const vector<string> &instructions) {
         //cout << instructions[PC / SIZE_OF_INSTRUCTIONS] << endl;
         execute_instruction(instructions[PC / SIZE_OF_INSTRUCTIONS], SP, PC, RV, memory, registers);
     }
-
     free(memory);
     free(registers);
 }

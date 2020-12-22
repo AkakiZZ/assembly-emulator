@@ -9,14 +9,14 @@ void error(int line_number) {
     exit(0);
 }
 
-bool is_number(string s) {
+bool is_number(const string s) {
     if (isdigit(s[0]) && s[0] == '0') return false;
     for(int i = 0; i < s.size(); i++)
         if (!isdigit(s[i])) return false;
     return true;
 }
 
-bool subsequence_helper(string str1, string str2, int m, int n) { 
+bool subsequence_helper(const string str1, const string str2, int m, int n) { 
     if (m == 0) return true; 
     if (n == 0) return false; 
     if (str1[m-1] == str2[n-1]) 
@@ -24,12 +24,18 @@ bool subsequence_helper(string str1, string str2, int m, int n) {
     return subsequence_helper(str1, str2, m, n-1); 
 } 
 
-bool is_subsequence(string str1, string str2) {
+bool is_subsequence(const string str1, const string str2) {
     return subsequence_helper(str1, str2, str1.length(), str2.length());
 }
 
 bool is_sp_op(const string instruction) {
     return instruction.substr(0, SP_OP_OFFSET) == SP_OP_MATCH;
+}
+
+string between_symbols(const string str, char ch1, char ch2) {
+    int idx1 = str.find(ch1);
+    int idx2 = str.find(ch2);
+    return str.substr(idx1 + 1, idx2 - idx1 - 1);
 }
 
 bool is_store_op(const string instruction) {
@@ -54,23 +60,18 @@ void sp_op(const string instruction, int &SP, int &PC) {
     string num = instruction.substr(SP_OP_OFFSET + 1, instruction.length() - SP_OP_OFFSET + 1);
     if (op == '-') SP -= stoi(num);
     else if (op == '+') SP += stoi(num);
-    else error(PC / SIZE_OF_INSTRUCTIONS + 1);
+    else error(GET_LINE(PC));
 }
 
 void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
     if(!is_store_op(instruction)) return;
-    regex r1("\\[(.*)\\]");
-    regex r2("\\=(.*)");
-    smatch m;
-    regex_search(instruction, m, r1);
-    string arg = (m.str(0).substr(1)).substr(0, m.str(0).length() - 2);
-    regex_search(instruction, m, r2);
-    string to_store = m.str(1);
+    string arg = between_symbols(instruction, '[', ']');
+    string to_store = between_symbols(instruction, '=', ';');
     if (arg == "SP") {
         if (is_number(to_store)) 
             memstore_four_bytes(SP, stoi(to_store));
         else if (to_store[0] == 'R')
-            memstore_four_bytes(SP, registers[stoi(m.str(1).substr(1))]);
+            memstore_four_bytes(SP, registers[stoi(to_store.substr(1))]);
         else if (to_store == "SP")
             memstore_four_bytes(SP, SP);
         else if (to_store == "RV")
@@ -78,7 +79,7 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
         else if (to_store == "PC")
             memstore_four_bytes(SP, PC);
         else
-            error(PC / SIZE_OF_INSTRUCTIONS + 1);
+            error(GET_LINE(PC));
     } else if (arg[0] == 'R') {
         if (is_number(to_store)) 
             memstore_four_bytes(registers[stoi(arg.substr(1))], stoi(to_store));
@@ -91,7 +92,7 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
         else if (to_store == "PC")
             memstore_four_bytes(registers[stoi(arg.substr(1))], PC);
         else
-            error(PC / SIZE_OF_INSTRUCTIONS + 1);
+            error(GET_LINE(PC));
     } else if (is_number(arg)) {
         if (is_number(to_store)) 
             memstore_four_bytes(stoi(arg), stoi(to_store));
@@ -104,21 +105,16 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
         else if (to_store == "PC")
             memstore_four_bytes(stoi(arg), PC);
         else
-            error(PC / SIZE_OF_INSTRUCTIONS + 1);
+            error(GET_LINE(PC));
     } else {
-        error(PC / SIZE_OF_INSTRUCTIONS + 1);
+        error(GET_LINE(PC));
     }
 }
 
 void load_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
     if (!is_load_op(instruction)) return;
-    regex r1("^(.*?)\\=");
-    regex r2("\\[(.*)\\]");
-    smatch m;
-    regex_search(instruction, m, r1);
-    int reg_num = stoi((m.str(0).substr(0, m.str(0).length() - 1)).substr(1));
-    regex_search(instruction, m, r2);
-    string arg = (m.str(0).substr(1)).substr(0, m.str(0).length() - 2);
+    int reg_num = stoi(between_symbols(instruction, 'R', '='));
+    string arg = between_symbols(instruction, '[', ']');
     if (is_number(arg)) 
         registers[reg_num] = memload_four_bytes(stoi(arg));
     else if (arg[0] == 'R')
@@ -130,9 +126,46 @@ void load_op(const string instruction, int &SP, int &PC, int &RV, void* &memory,
     else if (arg == "PC")
         registers[reg_num] = memload_four_bytes(PC);
     else
-        error(PC / SIZE_OF_INSTRUCTIONS + 1);
+        error(GET_LINE(PC));
 }
 
 void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
     if (!is_alu_op(instruction)) return;
+    int reg_num = stoi(between_symbols(instruction, 'R', '='));
+    string arg1;
+    string arg2;
+    char op;
+    if (instruction.find('+') != -1) {
+        arg1 = between_symbols(instruction, '=', '+');
+        arg2 = between_symbols(instruction, '+', ';');
+        op = '+';
+    } else if (instruction.find('-') != -1) {
+        arg1 = between_symbols(instruction, '=', '-');
+        arg2 = between_symbols(instruction, '-', ';');
+        op = '-';
+    } else if (instruction.find('*') != -1) {
+        arg1 = between_symbols(instruction, '=', '*');
+        arg2 = between_symbols(instruction, '*', ';');
+        op = '*';
+    } else if (instruction.find('/') != -1) {
+        arg1 = between_symbols(instruction, '=', '/');
+        arg2 = between_symbols(instruction, '/', ';');
+        op = '/';
+    } else {
+        error(GET_LINE(PC));
+    }
+    int num1;
+    int num2;
+    if (arg1[0] == 'R') num1 = registers[stoi(arg1.substr(1))];
+    else if (arg1 == "RV") num1 = RV;
+    else if (is_number(arg1)) num1 = stoi(arg1);
+
+    if (arg2[0] == 'R') num2 = registers[stoi(arg2.substr(1))];
+    else if (arg2 == "RV") num2 = RV;
+    else if (is_number(arg2)) num2 = stoi(arg2);
+
+    if (op == '+') registers[reg_num] = num1 + num2;
+    if (op == '-') registers[reg_num] = num1 - num2;
+    if (op == '*') registers[reg_num] = num1 * num2;
+    if (op == '/') registers[reg_num] = num1 / num2;
 }
