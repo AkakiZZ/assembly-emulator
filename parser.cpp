@@ -61,7 +61,7 @@ int jump_helper(const string arg, int* &registers, int &PC, int &RV) {
     else 
         error(GET_LINE(PC));
     if ((new_pc % 4 != 0 || new_pc == 0) && new_pc >= 0) error(GET_LINE(PC));
-    return new_pc;
+    return new_pc - 4;
 }
 
 bool is_store_op(const string instruction) {
@@ -91,7 +91,6 @@ bool is_ret_op(const string instruction) {
 }
 
 void sp_op(const string instruction, int &SP, int &PC) {
-    if (!is_sp_op(instruction)) return;
     char op = instruction[SP_OP_OFFSET];
     string num = instruction.substr(SP_OP_OFFSET + 1, instruction.length() - SP_OP_OFFSET + 1);
     if (op == '-') SP -= stoi(num);
@@ -100,7 +99,6 @@ void sp_op(const string instruction, int &SP, int &PC) {
 }
 
 void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if(!is_store_op(instruction)) return;
     string arg = between_symbols(instruction, '[', ']');
     string to_store = between_symbols(instruction, '=', ';');
     if (arg == "SP") {
@@ -148,7 +146,6 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
 }
 
 void load_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_load_op(instruction)) return;
     string arg = between_symbols(instruction, '[', ']');
     if (instruction[0] == 'R' && between_symbols(instruction, 'R', '=') == "V") {
         if (is_number(arg)) 
@@ -182,8 +179,9 @@ void load_op(const string instruction, int &SP, int &PC, int &RV, void* &memory,
 }
 
 void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_alu_op(instruction)) return;
-    int reg_num = stoi(between_symbols(instruction, 'R', '='));
+    bool is_RV = between_symbols(instruction, 'R', '=') == "V";
+    int reg_num;
+    if (!is_RV) reg_num = stoi(between_symbols(instruction, 'R', '='));
     string arg1;
     string arg2;
     char op;
@@ -212,6 +210,10 @@ void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, 
         else if (no_op_arg == "PC") to_store = PC;
         else if (is_number(no_op_arg)) to_store = stoi(no_op_arg);
         else error(GET_LINE(PC));
+        if (is_RV) {
+            RV = to_store;
+            return;
+        }
         registers[reg_num] = to_store;
         return;
     }
@@ -229,6 +231,14 @@ void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, 
     else if (arg2 == "PC") num2 = PC;
     else if (is_number(arg2)) num2 = stoi(arg2);
 
+    if (is_RV) {
+        if (op == '+') RV = num1 + num2;
+        if (op == '-') RV = num1 - num2;
+        if (op == '*') RV = num1 * num2;
+        if (op == '/') RV = num1 / num2;
+        return;
+    }
+
     if (op == '+') registers[reg_num] = num1 + num2;
     if (op == '-') registers[reg_num] = num1 - num2;
     if (op == '*') registers[reg_num] = num1 * num2;
@@ -236,14 +246,12 @@ void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, 
 }
 
 void jmp_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_jmp_op(instruction)) return;
     string arg = between_symbols(instruction, 'P', ';');
     int new_pc = jump_helper(arg, registers, PC, RV);
-    PC = new_pc - 4;
+    PC = new_pc;
 }
 
 void branch_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_branch_op(instruction)) return;
     int branch_idx = -1;
     string branch = instruction.substr(0, 3);
     for (int i = 0; i < NUM_BRANCHES; i++) {
@@ -291,7 +299,6 @@ void branch_op(const string instruction, int &SP, int &PC, int &RV, void* &memor
 }
 
 void call_op(const string instruction, map<string, int> functions, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_call_op(instruction)) return;
     string arg = between_symbols(instruction, '<', '>');
     SP -= sizeof(int);
     memstore_four_bytes(SP, PC); //saved pc 
@@ -310,7 +317,6 @@ void call_op(const string instruction, map<string, int> functions, int &SP, int 
 }
 
 void ret_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    if (!is_ret_op(instruction)) return;
     PC = memload_four_bytes(SP);
     SP += sizeof(int);
 }

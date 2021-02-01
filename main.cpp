@@ -17,11 +17,6 @@ void execute_instruction(const string instruction, map<string, int> functions, i
 void execute_instructions(const vector<string> &instructions, map<string, int> functions);
 void get_functions(const vector<string> &instructions, map<string, int> &functions);
 
-void error(int line_number) {
-    cout << "Error at line #" << line_number << endl;
-    exit(0);
-}
-
 int main() {
     ifstream file;
     file >> std::ws;
@@ -80,7 +75,7 @@ void execute_instructions(const vector<string> &instructions, map<string, int> f
             }
             PC += SIZE_OF_INSTRUCTIONS;
         }
-        cout << instructions[PC / SIZE_OF_INSTRUCTIONS] << endl;
+        cout << instructions[PC / SIZE_OF_INSTRUCTIONS] << "  PC = " << PC << endl;
         execute_instruction(instructions[PC / SIZE_OF_INSTRUCTIONS], functions, SP, PC, RV, memory, registers);
     }
     cout << "MEM: " << memload_four_bytes(200) << endl;

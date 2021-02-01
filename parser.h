@@ -44,3 +44,5 @@ void branch_op(const std::string instruction, int &SP, int &PC, int &RV, void* &
 void call_op(const std::string instruction, std::map<std::string, int> functions, int &SP, int &PC, int &RV, void* &memory, int* &registers);
 void ret_op(const std::string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers);
 void def_op();
+
+void error(int line_number);
