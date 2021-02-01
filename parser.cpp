@@ -307,11 +307,8 @@ void call_op(const string instruction, map<string, int> functions, int &SP, int 
     } else if (arg == "RV") {
         PC = RV;
     } else {
-        if (functions.count(arg)) {
-            PC = functions[arg];
-        } else {
-            error(GET_LINE(PC));
-        }
+        if (functions.count(arg)) PC = functions[arg];
+        else error(GET_LINE(PC));
     }
     
 }
