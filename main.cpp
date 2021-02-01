@@ -75,12 +75,8 @@ void execute_instructions(const vector<string> &instructions, map<string, int> f
             }
             PC += SIZE_OF_INSTRUCTIONS;
         }
-        cout << instructions[PC / SIZE_OF_INSTRUCTIONS] << "  PC = " << PC << endl;
         execute_instruction(instructions[PC / SIZE_OF_INSTRUCTIONS], functions, SP, PC, RV, memory, registers);
     }
-    cout << "MEM: " << memload_four_bytes(200) << endl;
-    cout << "start: " << memload_four_bytes(VIRTUAL_MEMORY_SIZE - 4) << endl;
-    cout << "second " << memload_four_bytes(VIRTUAL_MEMORY_SIZE - 8) << endl;
     cout << "Program Ran Succesfully" << endl;
     free(memory);
     free(registers);

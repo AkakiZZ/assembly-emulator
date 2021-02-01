@@ -4,11 +4,11 @@ using namespace std;
 
 void get_input(ifstream &file) {
     string filename;
-    cout << "input filename: ";
+    cout << "Input filename: ";
     cin >> filename;
     file.open(filename);
     while(file.fail()) {
-        cout << "file doesn't exist\ninput filename: ";
+        cout << "File doesn't exist\nInput filename: ";
         cin >> filename;
         file.open(filename);
     }
