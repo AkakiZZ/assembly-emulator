@@ -46,9 +46,9 @@ void execute_instruction(const string instruction, map<string, int> functions,
 void get_functions(const vector<string> &instructions, map<string, int> &functions) {
     bool complete = true;
     for (int i = 0; i < instructions.size(); i++) {
-        if (instructions[i].length() >= 4 && instructions[i].substr(0, 4) == DEFINE_KEYWORD) {
+        if (instructions[i].length() >= DEFINE_KEYWORD.length() && instructions[i].substr(0, DEFINE_KEYWORD.length()) == DEFINE_KEYWORD) {
             complete = !complete;
-            functions[instructions[i].substr(4, instructions[i].length() - 6)] = i * SIZE_OF_INSTRUCTIONS;
+            functions[instructions[i].substr(DEFINE_KEYWORD.length(), instructions[i].length() - 6)] = i * SIZE_OF_INSTRUCTIONS;
         }
         if (instructions[i] == END_KEYWORD) {
             complete = !complete;
@@ -69,7 +69,7 @@ void execute_instructions(const vector<string> &instructions, map<string, int> f
     
     for (PC = 0; PC < instructions.size() * SIZE_OF_INSTRUCTIONS; PC += SIZE_OF_INSTRUCTIONS) {
         
-        while (instructions[PC / SIZE_OF_INSTRUCTIONS].substr(0, 4) == DEFINE_KEYWORD) {
+        while (instructions[PC / SIZE_OF_INSTRUCTIONS].substr(0, DEFINE_KEYWORD.length()) == DEFINE_KEYWORD) {
             while (instructions[PC / SIZE_OF_INSTRUCTIONS] != END_KEYWORD) {
                 PC += SIZE_OF_INSTRUCTIONS;
             }
