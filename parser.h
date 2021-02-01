@@ -16,10 +16,7 @@ const static int NUM_BRANCHES = 6;
 const static std::string SP_OP_MATCH = "SP=SP;";
 const static std::string STORE_OP_MATCH = "M[]=;";
 const static std::string LOAD_OP_MATCH = "R=M[];";
-const static std::string ALU_OP_MATCH_1 = "R=-;"; 
-const static std::string ALU_OP_MATCH_2 = "R=+;"; 
-const static std::string ALU_OP_MATCH_3 = "R=*;"; 
-const static std::string ALU_OP_MATCH_4 = "R=/;"; 
+const static std::string ALU_OP_MATCH = "R=;";
 const static std::string BRANCHES[6] = {"BLT", "BLE", "BEQ", "BNE", "BGT", "BGE"};
 const static std::string BRANCH_MATCH = "B,,;";
 const static std::string JMP_MATCH = "JMP";
@@ -27,6 +24,16 @@ const static std::string CALL_MATCH = "CALL<>";
 const static std::string RET_MATCH = "RET;";
 
 void error(int line_number);
+
+bool is_sp_op(const std::string instruction);
+bool is_jmp_op(const std::string instruction);
+bool is_store_op(const std::string instruction);
+bool is_load_op(const std::string instruction);
+bool is_alu_op(const std::string instruction);
+bool is_branch_op(const std::string instruction);
+bool is_call_op(const std::string instruction);
+bool is_ret_op(const std::string instruction);
+
 
 void sp_op(const std::string instruction, int &SP, int &PC);
 void store_op(const std::string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers);

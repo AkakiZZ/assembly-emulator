@@ -73,11 +73,8 @@ bool is_load_op(const string instruction) {
 }
 
 bool is_alu_op(const string instruction) {
-    return (is_subsequence(ALU_OP_MATCH_1, instruction) ||
-        is_subsequence(ALU_OP_MATCH_2, instruction) ||
-        is_subsequence(ALU_OP_MATCH_3, instruction) ||
-        is_subsequence(ALU_OP_MATCH_4, instruction)) &&
-        instruction[0] == 'R';
+    return (is_subsequence(ALU_OP_MATCH, instruction) &&
+        instruction[0] == 'R');
 } 
 
 bool is_branch_op(const string instruction) {
@@ -109,12 +106,12 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
     if (arg == "SP") {
         if (is_number(to_store)) 
             memstore_four_bytes(SP, stoi(to_store));
+        else if (to_store == "RV")
+            memstore_four_bytes(SP, RV);
         else if (to_store[0] == 'R')
             memstore_four_bytes(SP, registers[stoi(to_store.substr(1))]);
         else if (to_store == "SP")
             memstore_four_bytes(SP, SP);
-        else if (to_store == "RV")
-            memstore_four_bytes(SP, RV);
         else if (to_store == "PC")
             memstore_four_bytes(SP, PC);
         else
@@ -122,12 +119,12 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
     } else if (arg[0] == 'R') {
         if (is_number(to_store)) 
             memstore_four_bytes(registers[stoi(arg.substr(1))], stoi(to_store));
+        else if (to_store == "RV")
+            memstore_four_bytes(registers[stoi(arg.substr(1))], RV);
         else if (to_store[0] == 'R')
             memstore_four_bytes(registers[stoi(arg.substr(1))], registers[stoi(to_store.substr(1))]);
         else if (to_store == "SP")
             memstore_four_bytes(registers[stoi(arg.substr(1))], SP);
-        else if (to_store == "RV")
-            memstore_four_bytes(registers[stoi(arg.substr(1))], RV);
         else if (to_store == "PC")
             memstore_four_bytes(registers[stoi(arg.substr(1))], PC);
         else
@@ -135,12 +132,12 @@ void store_op(const string instruction, int &SP, int &PC, int &RV, void* &memory
     } else if (is_number(arg)) {
         if (is_number(to_store)) 
             memstore_four_bytes(stoi(arg), stoi(to_store));
+        else if (to_store == "RV") 
+            memstore_four_bytes(stoi(arg), RV);
         else if (to_store[0] == 'R')
             memstore_four_bytes(stoi(arg), registers[stoi(to_store.substr(1))]);
         else if (to_store == "SP")
             memstore_four_bytes(stoi(arg), SP);
-        else if (to_store == "RV")
-            memstore_four_bytes(stoi(arg), RV);
         else if (to_store == "PC")
             memstore_four_bytes(stoi(arg), PC);
         else
@@ -168,12 +165,12 @@ void load_op(const string instruction, int &SP, int &PC, int &RV, void* &memory,
         int reg_num = stoi(between_symbols(instruction, 'R', '='));
         if (is_number(arg)) 
             registers[reg_num] = memload_four_bytes(stoi(arg));
+        else if (arg == "RV")
+            registers[reg_num] = memload_four_bytes(RV);
         else if (arg[0] == 'R')
             registers[reg_num] = memload_four_bytes(registers[stoi(arg.substr(1))]);
         else if (arg == "SP")
             registers[reg_num] = memload_four_bytes(SP);
-        else if (arg == "RV")
-            registers[reg_num] = memload_four_bytes(RV);
         else if (arg == "PC")
             registers[reg_num] = memload_four_bytes(PC);
         else
@@ -207,16 +204,29 @@ void alu_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, 
         arg2 = between_symbols(instruction, '/', ';');
         op = '/';
     } else {
-        error(GET_LINE(PC));
+        string no_op_arg = between_symbols(instruction, '=', ';');
+        int to_store;
+        if (no_op_arg == "RV") to_store = RV;
+        else if (no_op_arg[0] == 'R') to_store = registers[stoi(no_op_arg.substr(1))];
+        else if (no_op_arg == "SP") to_store = SP;
+        else if (no_op_arg == "PC") to_store = PC;
+        else if (is_number(no_op_arg)) to_store = stoi(no_op_arg);
+        else error(GET_LINE(PC));
+        registers[reg_num] = to_store;
+        return;
     }
     int num1;
     int num2;
-    if (arg1[0] == 'R') num1 = registers[stoi(arg1.substr(1))];
-    else if (arg1 == "RV") num1 = RV;
+    if (arg1 == "RV") num1 = RV;
+    else if (arg1[0] == 'R') num1 = registers[stoi(arg1.substr(1))];
+    else if (arg1 == "SP") num1 = SP;
+    else if (arg1 == "PC") num1 = PC;
     else if (is_number(arg1)) num1 = stoi(arg1);
 
-    if (arg2[0] == 'R') num2 = registers[stoi(arg2.substr(1))];
-    else if (arg2 == "RV") num2 = RV;
+    if (arg2 == "RV") num2 = RV;
+    else if (arg2[0] == 'R') num2 = registers[stoi(arg2.substr(1))];
+    else if (arg2 == "SP") num2 = SP;
+    else if (arg2 == "PC") num2 = PC;
     else if (is_number(arg2)) num2 = stoi(arg2);
 
     if (op == '+') registers[reg_num] = num1 + num2;
@@ -299,7 +309,7 @@ void call_op(const string instruction, map<string, int> functions, int &SP, int 
     
 }
 
-void ret_op(const std::string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
+void ret_op(const string instruction, int &SP, int &PC, int &RV, void* &memory, int* &registers) {
     if (!is_ret_op(instruction)) return;
     PC = memload_four_bytes(SP);
     SP += sizeof(int);

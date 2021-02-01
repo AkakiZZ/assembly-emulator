@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <map>
 
+#define GET_LINE(PC) (PC / SIZE_OF_INSTRUCTIONS + 1)
+
 using namespace std;
 
 const static int SIZE_OF_INSTRUCTIONS = 4;
@@ -14,6 +16,11 @@ const static string END_KEYWORD = "END_DEF;";
 void execute_instruction(const string instruction, map<string, int> functions, int &SP, int &PC, int &RV, void* &memory, int* &registers);
 void execute_instructions(const vector<string> &instructions, map<string, int> functions);
 void get_functions(const vector<string> &instructions, map<string, int> &functions);
+
+void error(int line_number) {
+    cout << "Error at line #" << line_number << endl;
+    exit(0);
+}
 
 int main() {
     ifstream file;
@@ -30,14 +37,15 @@ int main() {
 
 void execute_instruction(const string instruction, map<string, int> functions, 
                         int &SP, int &PC, int &RV, void* &memory, int* &registers) {
-    sp_op(instruction, SP, PC);
-    store_op(instruction, SP, PC, RV, memory, registers);
-    load_op(instruction, SP, PC, RV, memory, registers);
-    alu_op(instruction, SP, PC, RV, memory, registers);
-    jmp_op(instruction, SP, PC, RV, memory, registers);
-    branch_op(instruction, SP, PC, RV, memory, registers);
-    call_op(instruction, functions, SP, PC, RV, memory, registers);
-    ret_op(instruction, SP, PC, RV, memory, registers);
+    if (is_sp_op(instruction)) sp_op(instruction, SP, PC);
+    else if (is_store_op(instruction)) store_op(instruction, SP, PC, RV, memory, registers);
+    else if (is_load_op(instruction)) load_op(instruction, SP, PC, RV, memory, registers);
+    else if (is_alu_op(instruction)) alu_op(instruction, SP, PC, RV, memory, registers);
+    else if (is_jmp_op(instruction)) jmp_op(instruction, SP, PC, RV, memory, registers);
+    else if (is_branch_op(instruction)) branch_op(instruction, SP, PC, RV, memory, registers);
+    else if (is_call_op(instruction)) call_op(instruction, functions, SP, PC, RV, memory, registers);
+    else if (is_ret_op(instruction)) ret_op(instruction, SP, PC, RV, memory, registers);
+    else error(GET_LINE(PC));
 }
 
 void get_functions(const vector<string> &instructions, map<string, int> &functions) {
@@ -51,7 +59,10 @@ void get_functions(const vector<string> &instructions, map<string, int> &functio
             complete = !complete;
         }
     }
-    if (!complete) abort();
+    if (!complete) {
+        cout << "Function body is incomplete" << endl;
+        exit(0);
+    }
 }
 
 void execute_instructions(const vector<string> &instructions, map<string, int> functions) {
@@ -69,8 +80,12 @@ void execute_instructions(const vector<string> &instructions, map<string, int> f
             }
             PC += SIZE_OF_INSTRUCTIONS;
         }
+        cout << instructions[PC / SIZE_OF_INSTRUCTIONS] << endl;
         execute_instruction(instructions[PC / SIZE_OF_INSTRUCTIONS], functions, SP, PC, RV, memory, registers);
     }
+    cout << "MEM: " << memload_four_bytes(200) << endl;
+    cout << "start: " << memload_four_bytes(VIRTUAL_MEMORY_SIZE - 4) << endl;
+    cout << "second " << memload_four_bytes(VIRTUAL_MEMORY_SIZE - 8) << endl;
     cout << "Program Ran Succesfully" << endl;
     free(memory);
     free(registers);
